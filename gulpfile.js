@@ -25,49 +25,44 @@ const customFileLoader = (filePath) => {
 };
 
 // EJSファイルをコンパイルする関数
-const ejsFunc = (cb) => {
+const ejsFunc = () => {
   return src(['./src/ejs/**/*.ejs', '!./src/ejs/**/_*.ejs'])
-    .pipe(
-      plumber({
-        errorHandler: notify.onError('Error: <%= error.message %>'),
-      })
-    )
+    .pipe(plumber({ errorHandler: notify.onError('Error: <%= error.message %>') }))
     .pipe(ejs({}, { ext: '.html' }, { basedir: './src/ejs', fileLoader: customFileLoader }))
     .pipe(rename({ extname: '.html' }))
-    .pipe(
-      prettier({
-        printWidth: 150,
-        semi: true,
-        singleQuote: true,
-        trailingComma: 'all',
-      })
-    )
-    .pipe(dest('./dist/'))
-  cb();
+    .pipe(prettier({
+      printWidth: 150,
+      semi: true,
+      singleQuote: true,
+      trailingComma: 'all',
+    }))
+    .pipe(dest('./dist/'));
 };
 
 // SCSSファイルを1つのCSSファイルにコンパイルする関数
-const scssFunc = (cb) => {
+const scssFunc = () => {
   return src('./src/scss/style.scss')
-    .pipe(
-      plumber({
-        errorHandler: notify.onError('Error: <%= error.message %>'),
-      })
-    )
+    .pipe(plumber({ errorHandler: notify.onError('Error: <%= error.message %>') }))
     .pipe(sass().on('error', sass.logError))
     .pipe(concat('style.css'))
-    .pipe(dest('./dist/'))
-  cb();
+    .pipe(dest('./dist/'));
 };
 
-// ファイル監視関数
+const imageFunc = () => {
+  return src('./src/images/**/*', { buffer: true })
+    .pipe(dest('./dist/images'));
+};
+
+// watch
 const watchFiles = () => {
-  watch('./src/ejs/**/*.ejs', series(ejsFunc));
-  watch('./src/scss/**/*.scss', series(scssFunc));
+  watch('./src/ejs/**/*.ejs', ejsFunc);
+  watch('./src/scss/**/*.scss', scssFunc);
+  watch('./src/images/**/*', imageFunc);
 };
 
 // gulpタスクの定義
 exports.ejsFunc = ejsFunc;
 exports.scssFunc = scssFunc;
 exports.watchFiles = watchFiles;
-exports.default = series(ejsFunc, scssFunc, watchFiles);
+exports.imageFunc = imageFunc;
+exports.default = series(ejsFunc, scssFunc, imageFunc, watchFiles);
